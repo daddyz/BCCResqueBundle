@@ -93,12 +93,15 @@ class StartWorkerCommand extends ContainerAwareCommand
         ));
 
         if (!$input->getOption('foreground')) {
-            $workerCommand = strtr('nohup %cmd% > %logs_dir%/resque.log 2>&1 & echo $!', array(
+            $envName = $input->getOption('env');
+            if (substr($envName, 0, 1) == '=') {
+                $envName = substr($envName, 1);
+            }
+            $workerCommand = strtr('nohup %cmd% > %logs_dir%/' . $envName . '_resque.log 2>&1 & echo $!', array(
                 '%cmd%'      => $workerCommand,
                 '%logs_dir%' => $this->getContainer()->getParameter('kernel.logs_dir'),
             ));
         }
-
 
 		// In windows: When you pass an environment to CMD it replaces the old environment
 		// That means we create a lot of problems with respect to user accounts and missing vars
@@ -139,3 +142,4 @@ class StartWorkerCommand extends ContainerAwareCommand
         }
     }
 }
+
