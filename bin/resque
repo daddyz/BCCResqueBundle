@@ -98,6 +98,8 @@ Resque_Event::listen('onFailure', function(Exception $exception, Resque_Job $job
     }
 });
 
+$PIDFILE = getenv('PIDFILE');
+
 if ($count > 1) {
     for ($i = 0; $i < $count; ++$i) {
         $pid = Resque::fork();
@@ -106,6 +108,13 @@ if ($count > 1) {
             die();
         } else if (!$pid) {
             // Child, start the worker
+            if ($PIDFILE) {
+                if (substr($PIDFILE, -3) == 'pid') {
+                    $baseName = substr($PIDFILE, 0, strlen($PIDFILE) - 4);
+                    $pidFile = "{$baseName}{$i}.pid";
+                    file_put_contents($pidFile, getmypid());
+                }
+            }
             $queues = explode(',', $QUEUE);
             $worker = new Resque_Worker($queues);
             $worker->setLogger($logger);
@@ -120,7 +129,6 @@ if ($count > 1) {
     $worker = new Resque_Worker($queues);
     $worker->setLogger($logger);
 
-    $PIDFILE = getenv('PIDFILE');
     if ($PIDFILE) {
         file_put_contents($PIDFILE, getmypid()) or
             die('Could not write PID information to ' . $PIDFILE);
@@ -129,3 +137,4 @@ if ($count > 1) {
     $logger->log(Psr\Log\LogLevel::NOTICE, 'Starting worker {worker}', array('worker' => $worker));
     $worker->work($interval, $BLOCKING);
 }
+
